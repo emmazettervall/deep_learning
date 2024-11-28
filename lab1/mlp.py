@@ -3,13 +3,19 @@ import data_generator
 
 # Different activations functions
 def activation(x, activation):
-    
-    #TODO: specify the different activation functions
+    # specify the different activation functions
     # 'activation' could be: 'linear', 'relu', 'sigmoid', or 'softmax'
-    if activation == '':
-        # TODO
+    if activation == 'linear':
+        return x
+    elif activation == 'relu':
+        return np.maximum(0, x)
+    elif activation == 'sigmoid':
+        return 1 / (1 + np.exp(-x))
+    elif activation == 'softmax':
+        exps = np.exp(x - np.max(x))  # Stability trick
+        return exps / np.sum(exps)
     else:
-        raise Exception("Activation function is not valid", activation) 
+        raise Exception("Activation function is not valid", activation)
 
 #-------------------------------
 # Our own implementation of an MLP
@@ -30,14 +36,14 @@ class MLP:
     ):
         self.activation = activation
 
-        # TODO: specify the number of hidden layers based on the length of the provided lists
-        self.hidden_layers = 
+        # specify the number of hidden layers based on the length of the provided lists
+        self.hidden_layers = len(W) - 1
 
         self.W = W
         self.b = b
 
-        # TODO: specify the total number of weights in the model (both weight matrices and bias vectors)
-        self.N = 0
+        # specify the total number of weights in the model (both weight matrices and bias vectors)
+        self.N = len(W) * len(b[0])
 
         print('Number of hidden layers: ', self.hidden_layers)
         print('Number of model weights: ', self.N)
@@ -47,34 +53,47 @@ class MLP:
         self,
         x      # Input data points
     ):
-        # TODO: specify a matrix for storing output values
-        y = 
+        # specify a matrix for storing output values
+        y = np.zeros((len(x), self.dataset.K))
+        # 1. Specify a loop over all the datapoints        
+            
+        for i, x_i in enumerate(x):
+            # Step 2: Specify input layer (2x1 matrix)
+            h = np.reshape(x_i, (2, 1))  # Assuming each input is 2-dimensional
+            
+            # Step 3: Loop over each hidden layer
+            for j in range(len(self.W)): 
+                # Multiply weight matrix with output from the previous layer, add bias, and apply activation
+                h = np.dot(self.W[j], h) + self.b[j]
+                h = activation(h, self.activation)
+            
+            # Step 4: Specify the final layer with softmax activation
+            h = activation(h, 'softmax')
+            
+            # Store result for this data point
+            y[i] = h.flatten()
 
-        # TODO: implement the feed-forward layer operations
-        # 1. Specify a loop over all the datapoints
-        # 2. Specify the input layer (2x1 matrix)
-        # 3. For each hidden layer, perform the MLP operations
-        #    - multiply weight matrix and output from previous layer
-        #    - add bias vector
-        #    - apply activation function
-        # 4. Specify the final layer, with 'softmax' activation
-        
         return y
 
     # Measure performance of model
     def evaluate(self):
         print('Model performance:')
 
-        # TODO: formulate the training loss and accuracy of the MLP
-        # Assume the mean squared error loss
-        # Hint: For calculating accuracy, use np.argmax to get predicted class
-        train_loss = 
-        train_acc = 
+        # Feedforward on training set
+        y_train_pred = self.feedforward(self.dataset.x_train)
+        # formulate the training loss and accuracy of the MLP
+        train_loss = np.mean((y_train_pred - self.dataset.y_train_oh)**2)
+        train_acc = np.mean(np.argmax(y_train_pred, 1) == self.dataset.y_train)
+
+    
         print("\tTrain loss:     %0.4f"%train_loss)
         print("\tTrain accuracy: %0.2f"%train_acc)
 
-        # TODO: formulate the test loss and accuracy of the MLP
-        test_loss = 
-        test_acc = 
-        print("\tTest loss:      %0.4f"%train_loss)
+        # Feedforward on test set
+        y_test_pred = self.feedforward(self.dataset.x_test)
+        # formulate the test loss and accuracy of the MLP
+        test_loss = np.mean((y_test_pred - self.dataset.y_test_oh)**2)
+        test_acc = np.mean(np.argmax(y_test_pred, 1) == self.dataset.y_test)
+
+        print("\tTest loss:      %0.4f"%test_loss)
         print("\tTest accuracy:  %0.2f"%test_acc)
